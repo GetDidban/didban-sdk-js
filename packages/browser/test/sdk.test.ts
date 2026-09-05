@@ -4,6 +4,7 @@ import { Didban } from '../src/didban';
 afterEach(() => {
   Didban.destroy();
   document.body.innerHTML = '';
+  localStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -53,6 +54,10 @@ describe('Didban browser SDK', () => {
     expect(report.appName).toBe('storefront-web');
     expect(report.user.apiKey).toBe('[Filtered]');
     expect(report.sdk.name).toBe('@didban/browser-sdk');
+    expect((await Didban.getStoredErrors())[0]).toMatchObject({
+      appName: 'storefront-web',
+      error: { message: 'boom' },
+    });
   });
 
   it('captures failed fetch details and reports the HTTP error', async () => {

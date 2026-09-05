@@ -3,10 +3,11 @@ import type {
   BreadcrumbCategory,
   CaptureContext,
   DidbanUser,
+  DidbanReport,
   LogLevel,
 } from '@didban/core';
 import { DidbanReactNativeClient } from './client';
-import type { DidbanInitOptions } from './types';
+import type { DidbanInitOptions, ScreenPerformanceMetrics } from './types';
 
 export class Didban {
   static #client: DidbanReactNativeClient | undefined;
@@ -45,6 +46,10 @@ export class Didban {
     this.#requireClient().setCurrentRoute(route, params);
   }
 
+  static getScreenPerformance(): ScreenPerformanceMetrics | undefined {
+    return this.#requireClient().getScreenPerformance();
+  }
+
   static set userData(user: DidbanUser | undefined) {
     this.#requireClient().userData = user;
   }
@@ -63,6 +68,14 @@ export class Didban {
 
   static clearBreadcrumbs(): void {
     this.#requireClient().clearBreadcrumbs();
+  }
+
+  static getStoredErrors(): Promise<DidbanReport[]> {
+    return this.#requireClient().getStoredErrors();
+  }
+
+  static clearStoredErrors(): Promise<void> {
+    return this.#requireClient().clearStoredErrors();
   }
 
   static destroy(): void {

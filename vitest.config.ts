@@ -8,6 +8,9 @@ export default defineConfig({
       'react-native': fileURLToPath(
         new URL('./packages/react-native/test/react-native.mock.ts', import.meta.url),
       ),
+      '@react-native-async-storage/async-storage': fileURLToPath(
+        new URL('./packages/react-native/test/async-storage.mock.ts', import.meta.url),
+      ),
     },
   },
   test: {

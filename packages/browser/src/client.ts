@@ -14,6 +14,7 @@ export class DidbanClient extends DidbanCoreClient {
 
   constructor(options: DidbanInitOptions) {
     const config = resolveBrowserConfig(options?.config);
+    const errorStorage = browserErrorStorage();
     super({
       apiKey: options?.apiKey ?? '',
       appName: options?.appName ?? '',
@@ -21,6 +22,7 @@ export class DidbanClient extends DidbanCoreClient {
       sdk: { name: SDK_NAME, version: SDK_VERSION },
       getPageContext: browserPageContext,
       getDeviceContext: browserDeviceContext,
+      ...(errorStorage ? { errorStorage } : {}),
     });
     this.#dom = new DomInstrumentation(config, (breadcrumb) => {
       this.addClue(breadcrumb.message, breadcrumb.data, breadcrumb.category, breadcrumb.level);
@@ -65,6 +67,14 @@ export class DidbanClient extends DidbanCoreClient {
   readonly #onUnhandledRejection = (event: PromiseRejectionEvent): void => {
     void this.capture(event.reason, { extra: { source: 'unhandledrejection' } });
   };
+}
+
+function browserErrorStorage(): Storage | undefined {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function browserPageContext(): PageContext {

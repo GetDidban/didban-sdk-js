@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Didban } from '../src/didban';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 afterEach(() => {
   Didban.destroy();
+  void AsyncStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -36,6 +38,7 @@ describe('Didban React Native SDK', () => {
       category: 'navigation',
       data: { to: 'Checkout', params: { cartId: 'cart-8' } },
     });
+    expect((await Didban.getStoredErrors())[0]?.error.message).toBe('payment failed');
   });
 
   it('captures React Native global errors and preserves the previous handler', () => {
@@ -64,5 +67,45 @@ describe('Didban React Native SDK', () => {
     expect(previous).toHaveBeenCalledWith(expect.any(Error), true);
     Didban.destroy();
     expect(handler).toBe(previous);
+  });
+
+  it('sends a warning report when the current screen drops FPS', async () => {
+    let nextFrame: FrameRequestCallback | undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      nextFrame = callback;
+      return 1;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const send = vi.fn(async () => new Response(null, { status: 202 }));
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test-key',
+      appName: 'mobile-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        captureAppErrors: false,
+        captureUnhandledRejections: false,
+        captureNetwork: false,
+        fpsSampleWindowMs: 1_000,
+        fpsReportCooldownMs: 0,
+      },
+    });
+    Didban.setCurrentRoute('ProductList');
+
+    for (let timestamp = 0; timestamp <= 1_040; timestamp += 40) nextFrame!(timestamp);
+    await vi.waitFor(() => expect(send).toHaveBeenCalledOnce());
+
+    const report = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
+    expect(report.context).toMatchObject({
+      level: 'warning',
+      tags: { type: 'performance', route: 'ProductList' },
+      extra: {
+        performance: {
+          route: 'ProductList',
+          averageFps: 25,
+          slowFramePercentage: 100,
+        },
+      },
+    });
   });
 });

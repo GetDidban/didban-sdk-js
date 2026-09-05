@@ -1,9 +1,11 @@
 import { DidbanCoreClient, type DeviceContext } from '@didban/core';
 import { Dimensions, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveReactNativeConfig } from './config';
 import { ReactNativeErrorInstrumentation } from './error-instrumentation';
 import { ReactNativeNetworkInstrumentation } from './network-instrumentation';
-import type { DidbanInitOptions } from './types';
+import { ScreenProfiler } from './screen-profiler';
+import type { DidbanInitOptions, ScreenPerformanceMetrics } from './types';
 
 const SDK_NAME = '@didban/react-native';
 const SDK_VERSION = '0.1.0';
@@ -15,6 +17,7 @@ interface RouteState {
 export class DidbanReactNativeClient extends DidbanCoreClient {
   readonly #errors: ReactNativeErrorInstrumentation;
   readonly #network: ReactNativeNetworkInstrumentation;
+  readonly #screenProfiler: ScreenProfiler;
   readonly #routeState: RouteState;
   #started = false;
 
@@ -31,6 +34,7 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
         ...defaultDeviceContext(),
         ...config.getDeviceContext?.(),
       }),
+      errorStorage: AsyncStorage,
     });
     this.#routeState = routeState;
     this.#network = new ReactNativeNetworkInstrumentation(config, this.reportUrl, {
@@ -46,12 +50,26 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
         void this.capture(error, { extra: data });
       },
     );
+    this.#screenProfiler = new ScreenProfiler(config, (metrics) => {
+      this.addClue(
+        `FPS drop detected on ${metrics.route}`,
+        { ...metrics },
+        'performance',
+        'warning',
+      );
+      void this.capture(new Error(`FPS drop detected on ${metrics.route}`), {
+        level: 'warning',
+        tags: { type: 'performance', route: metrics.route },
+        extra: { performance: metrics },
+      });
+    });
   }
 
   start(): this {
     if (this.#started) return this;
     this.#network.start();
     this.#errors.start();
+    this.#screenProfiler.start();
     this.#started = true;
     return this;
   }
@@ -60,11 +78,13 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
     if (!this.#started) return;
     this.#errors.stop();
     this.#network.stop();
+    this.#screenProfiler.stop();
     this.#started = false;
   }
 
   setCurrentRoute(route: string | undefined, params?: Record<string, unknown>): this {
     const previous = this.#routeState.current;
+    this.#screenProfiler.setRoute(route);
     if (route) this.#routeState.current = route;
     else delete this.#routeState.current;
     if (route && route !== previous) {
@@ -75,6 +95,10 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
       );
     }
     return this;
+  }
+
+  getScreenPerformance(): ScreenPerformanceMetrics | undefined {
+    return this.#screenProfiler.snapshot();
   }
 }
 

@@ -4,6 +4,7 @@ export type BreadcrumbCategory =
   | 'user.click'
   | 'user.input'
   | 'navigation'
+  | 'performance'
   | 'http'
   | 'log'
   | 'custom'

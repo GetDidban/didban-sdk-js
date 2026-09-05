@@ -1,6 +1,7 @@
 import { DidbanApiClient } from './api';
 import { BreadcrumbBuffer } from './breadcrumb-buffer';
 import type { ResolvedCoreConfig } from './config';
+import { ErrorReportStore, type KeyValueStorage } from './error-store';
 import type {
   Breadcrumb,
   BreadcrumbCategory,
@@ -20,6 +21,7 @@ export interface DidbanCoreClientOptions {
   sdk: { name: string; version: string };
   getPageContext?: () => PageContext;
   getDeviceContext?: () => DeviceContext;
+  errorStorage?: KeyValueStorage;
 }
 
 export class DidbanCoreClient {
@@ -29,6 +31,7 @@ export class DidbanCoreClient {
   readonly #sdk: { name: string; version: string };
   readonly #getPageContext: () => PageContext;
   readonly #getDeviceContext: () => DeviceContext;
+  readonly #errorStore: ErrorReportStore | undefined;
   protected readonly config: ResolvedCoreConfig;
   #userData: DidbanUser | undefined;
 
@@ -50,6 +53,12 @@ export class DidbanCoreClient {
     this.#sdk = options.sdk;
     this.#getPageContext = options.getPageContext ?? (() => ({}));
     this.#getDeviceContext = options.getDeviceContext ?? (() => ({}));
+    this.#errorStore = options.errorStorage
+      ? new ErrorReportStore(options.errorStorage, this.#appName)
+      : undefined;
+    void this.#errorStore?.list().catch((cause: unknown) => {
+      this.config.onError?.(normalizeError(cause));
+    });
   }
 
   get reportUrl(): string {
@@ -107,6 +116,13 @@ export class DidbanCoreClient {
         if (!processed) return false;
         report = processed;
       }
+      if (this.#errorStore) {
+        try {
+          await this.#errorStore.add(report);
+        } catch (cause) {
+          this.config.onError?.(normalizeError(cause));
+        }
+      }
       await this.#api.sendReport(report);
       return true;
     } catch (cause) {
@@ -121,6 +137,14 @@ export class DidbanCoreClient {
 
   clearBreadcrumbs(): void {
     this.#breadcrumbs.clear();
+  }
+
+  getStoredErrors(): Promise<DidbanReport[]> {
+    return this.#errorStore?.list() ?? Promise.resolve([]);
+  }
+
+  clearStoredErrors(): Promise<void> {
+    return this.#errorStore?.clear() ?? Promise.resolve();
   }
 
   #createReport(error: Error, context?: CaptureContext): DidbanReport {

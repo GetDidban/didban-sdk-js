@@ -3,6 +3,7 @@ import type {
   BreadcrumbCategory,
   CaptureContext,
   DidbanUser,
+  DidbanReport,
   LogLevel,
 } from '@didban/core';
 import { DidbanClient } from './client';
@@ -59,6 +60,14 @@ export class Didban {
 
   static clearBreadcrumbs(): void {
     this.#requireClient().clearBreadcrumbs();
+  }
+
+  static getStoredErrors(): Promise<DidbanReport[]> {
+    return this.#requireClient().getStoredErrors();
+  }
+
+  static clearStoredErrors(): Promise<void> {
+    return this.#requireClient().clearStoredErrors();
   }
 
   static destroy(): void {
