@@ -17,6 +17,7 @@ interface XhrMeta {
   method: string;
   url: string;
   startedAt: number;
+  requestError?: Error;
   requestBody?: unknown;
 }
 
@@ -74,6 +75,7 @@ export class NetworkInstrumentation {
         init?.method ?? (input instanceof Request ? input.method : 'GET')
       ).toUpperCase();
       const startedAt = now();
+      const requestError = new Error();
       const requestBody = self.#config.captureRequestBody
         ? sanitizeBody(
             init?.body ?? (input instanceof Request ? '[Request body stream]' : undefined),
@@ -97,7 +99,10 @@ export class NetworkInstrumentation {
         self.#hooks.addHttp(data, response.ok ? 'info' : 'error');
         if (!response.ok && self.#config.reportFailedRequests) {
           self.#hooks.reportHttpError(
-            new Error(`${method} ${url} returned HTTP ${response.status}`),
+            requestErrorWithMessage(
+              requestError,
+              `${method} ${url} returned HTTP ${response.status}`,
+            ),
             data,
           );
         }
@@ -158,6 +163,7 @@ export class NetworkInstrumentation {
       const meta = self.#xhrMeta.get(this);
       if (!meta || self.#ignored(meta.url)) return originalSend.call(this, body);
       meta.startedAt = now();
+      meta.requestError = new Error();
       if (self.#config.captureRequestBody) {
         meta.requestBody = sanitizeBody(body, self.#config.maxValueLength);
       }
@@ -192,9 +198,22 @@ export class NetworkInstrumentation {
     this.#hooks.addHttp(data, ok ? 'info' : 'error');
     if (!ok && this.#config.reportFailedRequests) {
       this.#hooks.reportHttpError(
-        new Error(`${meta.method} ${meta.url} returned HTTP ${xhr.status || 0}`),
+        requestErrorWithMessage(
+          meta.requestError,
+          `${meta.method} ${meta.url} returned HTTP ${xhr.status || 0}`,
+        ),
         data,
       );
     }
   }
+}
+
+function requestErrorWithMessage(requestError: Error | undefined, message: string): Error {
+  if (!requestError) return new Error(message);
+  requestError.message = message;
+  if (requestError.stack) {
+    const [, ...frames] = requestError.stack.split('\n');
+    requestError.stack = `${requestError.name}: ${message}${frames.length ? `\n${frames.join('\n')}` : ''}`;
+  }
+  return requestError;
 }

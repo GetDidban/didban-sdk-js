@@ -72,10 +72,14 @@ describe('Didban browser SDK', () => {
       config: { baseUrl: 'https://collector.example' },
     });
 
-    const response = await fetch('https://service.example/orders', {
-      method: 'POST',
-      body: JSON.stringify({ product: 10, token: 'must-not-leak' }),
-    });
+    async function submitOrder(): Promise<Response> {
+      return fetch('https://service.example/orders', {
+        method: 'POST',
+        body: JSON.stringify({ product: 10, token: 'must-not-leak' }),
+      });
+    }
+
+    const response = await submitOrder();
     await vi.waitFor(() => expect(original).toHaveBeenCalledTimes(2));
 
     expect(response.status).toBe(403);
@@ -86,5 +90,11 @@ describe('Didban browser SDK', () => {
       responseBody: { reason: 'denied' },
       requestBody: { product: 10, token: '[Filtered]' },
     });
+    const reportCall = original.mock.calls.find(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.error.stack).toContain('submitOrder');
+    expect(report.error.stack).toContain('returned HTTP 403');
   });
 });

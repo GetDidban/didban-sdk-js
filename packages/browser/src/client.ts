@@ -5,7 +5,7 @@ import { NetworkInstrumentation } from './network-instrumentation';
 import type { DidbanInitOptions } from './types';
 
 const SDK_NAME = '@didban/browser-sdk';
-const SDK_VERSION = '0.1.0';
+const SDK_VERSION = '0.1.1';
 
 export class DidbanClient extends DidbanCoreClient {
   readonly #dom: DomInstrumentation;
