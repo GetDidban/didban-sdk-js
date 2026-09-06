@@ -45,6 +45,7 @@ export class ReactNativeNetworkInstrumentation {
       }
       const method = (init?.method ?? request?.method ?? 'GET').toUpperCase();
       const startedAt = now();
+      const requestError = new Error();
       const requestBody = self.#config.captureRequestBody
         ? sanitizeBody(
             init?.body ?? (request ? '[Request body stream]' : undefined),
@@ -69,7 +70,10 @@ export class ReactNativeNetworkInstrumentation {
         self.#hooks.addHttp(data, response.ok ? 'info' : 'error');
         if (!response.ok && self.#config.reportFailedRequests) {
           self.#hooks.reportHttpError(
-            new Error(`${method} ${url} returned HTTP ${response.status}`),
+            requestErrorWithMessage(
+              requestError,
+              `${method} ${url} returned HTTP ${response.status}`,
+            ),
             data,
           );
         }
@@ -109,4 +113,13 @@ export class ReactNativeNetworkInstrumentation {
       return '[Unavailable]';
     }
   }
+}
+
+function requestErrorWithMessage(requestError: Error, message: string): Error {
+  requestError.message = message;
+  if (requestError.stack) {
+    const [, ...frames] = requestError.stack.split('\n');
+    requestError.stack = `${requestError.name}: ${message}${frames.length ? `\n${frames.join('\n')}` : ''}`;
+  }
+  return requestError;
 }

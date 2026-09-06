@@ -1,6 +1,6 @@
 {
   "name": "@didban/react-native",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Didban monitoring SDK for React Native applications.",
   "type": "module",
   "main": "./dist/index.cjs",

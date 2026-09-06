@@ -69,6 +69,38 @@ describe('Didban React Native SDK', () => {
     expect(handler).toBe(previous);
   });
 
+  it('keeps the application call site when reporting failed HTTP responses', async () => {
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      return new Response(JSON.stringify({ reason: 'denied' }), { status: 403 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test-key',
+      appName: 'mobile-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        captureAppErrors: false,
+        captureUnhandledRejections: false,
+      },
+    });
+
+    async function loadOrders(): Promise<Response> {
+      return fetch('https://service.example/orders');
+    }
+
+    const response = await loadOrders();
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    expect(response.status).toBe(403);
+    const reportCall = send.mock.calls.find(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.error.stack).toContain('loadOrders');
+    expect(report.error.stack).toContain('returned HTTP 403');
+  });
+
   it('sends a warning report when the current screen drops FPS', async () => {
     let nextFrame: FrameRequestCallback | undefined;
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {

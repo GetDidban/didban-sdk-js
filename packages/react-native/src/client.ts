@@ -8,7 +8,7 @@ import { ScreenProfiler } from './screen-profiler';
 import type { DidbanInitOptions, ScreenPerformanceMetrics } from './types';
 
 const SDK_NAME = '@didban/react-native';
-const SDK_VERSION = '0.1.0';
+const SDK_VERSION = '0.1.1';
 
 interface RouteState {
   current?: string;
