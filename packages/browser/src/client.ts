@@ -37,6 +37,15 @@ export class DidbanClient extends DidbanCoreClient {
       reportHttpError: (error, data) => {
         void this.capture(error, { extra: { http: data } });
       },
+      reportSlowRequest: (error, data) => {
+        void this.capture(error, {
+          level: 'warning',
+          tags: { type: 'performance', operation: 'http' },
+          extra: {
+            http: { ...data, slowRequestThresholdMs: config.slowRequestThresholdMs },
+          },
+        });
+      },
     });
     this.#console = new ConsoleInstrumentation((error) => {
       return this.#captureAutomatic(error, 'console.error');

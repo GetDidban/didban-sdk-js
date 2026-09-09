@@ -9,6 +9,8 @@ export const DEFAULT_BROWSER_CONFIG = {
   captureRequestBody: true,
   captureResponseBody: true,
   reportFailedRequests: true,
+  reportSlowRequests: true,
+  slowRequestThresholdMs: 3_000,
   maskAllInputs: false,
   maskSelectors: [
     'input[type=password]',
@@ -29,6 +31,8 @@ export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
   captureRequestBody: boolean;
   captureResponseBody: boolean;
   reportFailedRequests: boolean;
+  reportSlowRequests: boolean;
+  slowRequestThresholdMs: number;
   maskAllInputs: boolean;
   maskSelectors: string[];
   ignoreUrls: Array<string | RegExp>;
@@ -46,6 +50,11 @@ export function resolveBrowserConfig(config: DidbanConfig = {}): ResolvedBrowser
     captureResponseBody: config.captureResponseBody ?? DEFAULT_BROWSER_CONFIG.captureResponseBody,
     reportFailedRequests:
       config.reportFailedRequests ?? DEFAULT_BROWSER_CONFIG.reportFailedRequests,
+    reportSlowRequests: config.reportSlowRequests ?? DEFAULT_BROWSER_CONFIG.reportSlowRequests,
+    slowRequestThresholdMs: Math.max(
+      0,
+      config.slowRequestThresholdMs ?? DEFAULT_BROWSER_CONFIG.slowRequestThresholdMs,
+    ),
     maskAllInputs: config.maskAllInputs ?? DEFAULT_BROWSER_CONFIG.maskAllInputs,
     maskSelectors: [...(config.maskSelectors ?? DEFAULT_BROWSER_CONFIG.maskSelectors)],
     ignoreUrls: [...(config.ignoreUrls ?? DEFAULT_BROWSER_CONFIG.ignoreUrls)],

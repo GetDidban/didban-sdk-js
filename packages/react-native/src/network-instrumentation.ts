@@ -11,6 +11,7 @@ import type { ResolvedReactNativeConfig } from './config';
 interface InstrumentationHooks {
   addHttp(data: Record<string, unknown>, level?: LogLevel): void;
   reportHttpError(error: Error, data: Record<string, unknown>): void;
+  reportSlowRequest(error: Error, data: Record<string, unknown>): void;
 }
 
 export class ReactNativeNetworkInstrumentation {
@@ -67,13 +68,21 @@ export class ReactNativeNetworkInstrumentation {
         if (self.#config.captureResponseBody) {
           data.responseBody = await self.#readResponse(response);
         }
-        self.#hooks.addHttp(data, response.ok ? 'info' : 'error');
+        const isSlow =
+          typeof data.durationMs === 'number' &&
+          data.durationMs > self.#config.slowRequestThresholdMs;
+        self.#hooks.addHttp(data, response.ok ? (isSlow ? 'warning' : 'info') : 'error');
         if (!response.ok && self.#config.reportFailedRequests) {
           self.#hooks.reportHttpError(
             requestErrorWithMessage(
               requestError,
               `${method} ${url} returned HTTP ${response.status}`,
             ),
+            data,
+          );
+        } else if (response.ok && isSlow && self.#config.reportSlowRequests) {
+          self.#hooks.reportSlowRequest(
+            slowRequestError(requestError, method, String(data.url)),
             data,
           );
         }
@@ -122,4 +131,11 @@ function requestErrorWithMessage(requestError: Error, message: string): Error {
     requestError.stack = `${requestError.name}: ${message}${frames.length ? `\n${frames.join('\n')}` : ''}`;
   }
   return requestError;
+}
+
+function slowRequestError(requestError: Error, method: string, url: string): Error {
+  const error = requestErrorWithMessage(requestError, `Slow HTTP request: ${method} ${url}`);
+  error.name = 'SlowHttpRequestError';
+  if (error.stack) error.stack = error.stack.replace(/^Error:/, `${error.name}:`);
+  return error;
 }

@@ -8,6 +8,8 @@ export const DEFAULT_REACT_NATIVE_CONFIG = {
   captureRequestBody: true,
   captureResponseBody: true,
   reportFailedRequests: true,
+  reportSlowRequests: true,
+  slowRequestThresholdMs: 3_000,
   ignoreUrls: [],
   enableScreenProfiling: true,
   reportFpsDrops: true,
@@ -25,6 +27,8 @@ export interface ResolvedReactNativeConfig extends ResolvedCoreConfig {
   captureRequestBody: boolean;
   captureResponseBody: boolean;
   reportFailedRequests: boolean;
+  reportSlowRequests: boolean;
+  slowRequestThresholdMs: number;
   ignoreUrls: Array<string | RegExp>;
   getDeviceContext?: DidbanReactNativeConfig['getDeviceContext'];
   enableScreenProfiling: boolean;
@@ -50,6 +54,11 @@ export function resolveReactNativeConfig(
       config.captureResponseBody ?? DEFAULT_REACT_NATIVE_CONFIG.captureResponseBody,
     reportFailedRequests:
       config.reportFailedRequests ?? DEFAULT_REACT_NATIVE_CONFIG.reportFailedRequests,
+    reportSlowRequests: config.reportSlowRequests ?? DEFAULT_REACT_NATIVE_CONFIG.reportSlowRequests,
+    slowRequestThresholdMs: Math.max(
+      0,
+      config.slowRequestThresholdMs ?? DEFAULT_REACT_NATIVE_CONFIG.slowRequestThresholdMs,
+    ),
     ignoreUrls: [...(config.ignoreUrls ?? DEFAULT_REACT_NATIVE_CONFIG.ignoreUrls)],
     ...(config.getDeviceContext ? { getDeviceContext: config.getDeviceContext } : {}),
     enableScreenProfiling:

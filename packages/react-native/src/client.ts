@@ -42,6 +42,15 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
       reportHttpError: (error, data) => {
         void this.capture(error, { extra: { http: data } });
       },
+      reportSlowRequest: (error, data) => {
+        void this.capture(error, {
+          level: 'warning',
+          tags: { type: 'performance', operation: 'http' },
+          extra: {
+            http: { ...data, slowRequestThresholdMs: config.slowRequestThresholdMs },
+          },
+        });
+      },
     });
     this.#errors = new ReactNativeErrorInstrumentation(
       config.captureAppErrors,

@@ -46,6 +46,8 @@ const metrics = Didban.getScreenPerformance();
 | `captureRequestBody`           | `true`  | ثبت بدنه‌ی درخواست پس از پاک‌سازی                             |
 | `captureResponseBody`          | `true`  | ثبت بدنه‌ی پاسخ                                               |
 | `reportFailedRequests`         | `true`  | ساخت گزارش برای پاسخ‌های HTTP ناموفق                          |
+| `reportSlowRequests`           | `true`  | ارسال warning برای درخواست‌های HTTP کند                       |
+| `slowRequestThresholdMs`       | `3000`  | بیشترین زمان قابل قبول هر درخواست برحسب میلی‌ثانیه            |
 | `ignoreUrls`                   | `[]`    | URLها یا RegExpهای مستثنا                                     |
 | `getDeviceContext`             | —       | افزودن اطلاعات سفارشی دستگاه به payload                       |
 | `enableScreenProfiling`        | `true`  | فعال‌سازی پروفایلینگ صفحه پس از `setCurrentRoute`             |

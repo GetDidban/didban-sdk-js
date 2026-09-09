@@ -31,3 +31,18 @@ await Didban.capture(new Error('Payment failed'));
 خطاهای دارای شیء `Error` که در `console.error` ثبت می‌شوند نیز به‌صورت پیش‌فرض ارسال
 می‌شوند. این مسیر خطاهای render گرفته‌شده توسط React Error Boundary را پوشش می‌دهد و با
 `captureConsoleErrors: false` قابل غیرفعال‌کردن است.
+
+درخواست‌های `fetch` و XHR که بیشتر از سه ثانیه طول بکشند نیز به‌صورت warning گزارش می‌شوند:
+
+```ts
+Didban.init({
+  apiKey: 'YOUR_API_KEY',
+  appName: 'storefront-web',
+  config: {
+    reportSlowRequests: true,
+    slowRequestThresholdMs: 3_000,
+  },
+});
+```
+
+برای غیرفعال‌کردن این گزارش‌ها `reportSlowRequests: false` را تنظیم کنید.

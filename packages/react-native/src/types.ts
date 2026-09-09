@@ -7,6 +7,10 @@ export interface DidbanReactNativeConfig extends DidbanCoreConfig {
   captureRequestBody?: boolean;
   captureResponseBody?: boolean;
   reportFailedRequests?: boolean;
+  /** Send a warning report when an HTTP request exceeds slowRequestThresholdMs. */
+  reportSlowRequests?: boolean;
+  /** Maximum acceptable request duration in milliseconds. */
+  slowRequestThresholdMs?: number;
   ignoreUrls?: Array<string | RegExp>;
   getDeviceContext?: () => DeviceContext;
   enableScreenProfiling?: boolean;

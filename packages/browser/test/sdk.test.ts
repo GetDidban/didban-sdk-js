@@ -124,4 +124,69 @@ describe('Didban browser SDK', () => {
     Didban.destroy();
     expect(console.error).toBe(spiedConsoleError);
   });
+
+  it('reports slow browser requests as configurable warnings', async () => {
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test',
+      appName: 'browser-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        slowRequestThresholdMs: 1,
+      },
+    });
+
+    await fetch('https://service.example/slow-orders');
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    const reportCall = send.mock.calls.find(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.error).toMatchObject({
+      name: 'SlowHttpRequestError',
+      message: 'Slow HTTP request: GET https://service.example/slow-orders',
+    });
+    expect(report.context).toMatchObject({
+      level: 'warning',
+      tags: { type: 'performance', operation: 'http' },
+      extra: {
+        http: {
+          url: 'https://service.example/slow-orders',
+          slowRequestThresholdMs: 1,
+        },
+      },
+    });
+    expect(report.context.extra.http.durationMs).toBeGreaterThan(1);
+  });
+
+  it('can disable slow browser request reports', async () => {
+    const send = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return new Response(null, { status: 200 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test',
+      appName: 'browser-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        reportSlowRequests: false,
+        slowRequestThresholdMs: 1,
+      },
+    });
+
+    await fetch('https://service.example/slow-orders');
+
+    expect(send).toHaveBeenCalledOnce();
+    expect(Didban.getBreadcrumbs().at(-1)).toMatchObject({
+      category: 'http',
+      level: 'warning',
+    });
+  });
 });

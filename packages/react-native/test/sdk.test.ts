@@ -140,4 +140,46 @@ describe('Didban React Native SDK', () => {
       },
     });
   });
+
+  it('reports slow React Native requests as configurable warnings', async () => {
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return new Response(null, { status: 200 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test-key',
+      appName: 'mobile-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        captureAppErrors: false,
+        captureUnhandledRejections: false,
+        slowRequestThresholdMs: 1,
+      },
+    });
+
+    await fetch('https://service.example/slow-products');
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    const reportCall = send.mock.calls.find(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.error).toMatchObject({
+      name: 'SlowHttpRequestError',
+      message: 'Slow HTTP request: GET https://service.example/slow-products',
+    });
+    expect(report.context).toMatchObject({
+      level: 'warning',
+      tags: { type: 'performance', operation: 'http' },
+      extra: {
+        http: {
+          url: 'https://service.example/slow-products',
+          slowRequestThresholdMs: 1,
+        },
+      },
+    });
+    expect(report.context.extra.http.durationMs).toBeGreaterThan(1);
+  });
 });

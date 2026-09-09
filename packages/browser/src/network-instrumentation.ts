@@ -11,6 +11,7 @@ import type { ResolvedBrowserConfig } from './config';
 interface InstrumentationHooks {
   addHttp(data: Record<string, unknown>, level?: LogLevel): void;
   reportHttpError(error: Error, data: Record<string, unknown>): void;
+  reportSlowRequest(error: Error, data: Record<string, unknown>): void;
 }
 
 interface XhrMeta {
@@ -96,13 +97,19 @@ export class NetworkInstrumentation {
         if (self.#config.captureResponseBody) {
           data.responseBody = await self.#readFetchBody(response);
         }
-        self.#hooks.addHttp(data, response.ok ? 'info' : 'error');
+        const isSlow = self.#isSlow(data.durationMs);
+        self.#hooks.addHttp(data, response.ok ? (isSlow ? 'warning' : 'info') : 'error');
         if (!response.ok && self.#config.reportFailedRequests) {
           self.#hooks.reportHttpError(
             requestErrorWithMessage(
               requestError,
               `${method} ${url} returned HTTP ${response.status}`,
             ),
+            data,
+          );
+        } else if (response.ok && isSlow && self.#config.reportSlowRequests) {
+          self.#hooks.reportSlowRequest(
+            slowRequestError(requestError, method, String(data.url)),
             data,
           );
         }
@@ -195,7 +202,8 @@ export class NetworkInstrumentation {
         data.responseBody = '[Unavailable]';
       }
     }
-    this.#hooks.addHttp(data, ok ? 'info' : 'error');
+    const isSlow = this.#isSlow(data.durationMs);
+    this.#hooks.addHttp(data, ok ? (isSlow ? 'warning' : 'info') : 'error');
     if (!ok && this.#config.reportFailedRequests) {
       this.#hooks.reportHttpError(
         requestErrorWithMessage(
@@ -204,7 +212,16 @@ export class NetworkInstrumentation {
         ),
         data,
       );
+    } else if (ok && isSlow && this.#config.reportSlowRequests) {
+      this.#hooks.reportSlowRequest(
+        slowRequestError(meta.requestError, meta.method, String(data.url)),
+        data,
+      );
     }
+  }
+
+  #isSlow(duration: unknown): boolean {
+    return typeof duration === 'number' && duration > this.#config.slowRequestThresholdMs;
   }
 }
 
@@ -216,4 +233,11 @@ function requestErrorWithMessage(requestError: Error | undefined, message: strin
     requestError.stack = `${requestError.name}: ${message}${frames.length ? `\n${frames.join('\n')}` : ''}`;
   }
   return requestError;
+}
+
+function slowRequestError(requestError: Error | undefined, method: string, url: string): Error {
+  const error = requestErrorWithMessage(requestError, `Slow HTTP request: ${method} ${url}`);
+  error.name = 'SlowHttpRequestError';
+  if (error.stack) error.stack = error.stack.replace(/^Error:/, `${error.name}:`);
+  return error;
 }
