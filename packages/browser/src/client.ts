@@ -9,6 +9,7 @@ const SDK_NAME = '@didban/browser-sdk';
 const SDK_VERSION = '0.1.1';
 
 export class DidbanClient extends DidbanCoreClient {
+  readonly #browserConfig: ResolvedBrowserConfig;
   readonly #dom: DomInstrumentation;
   readonly #network: NetworkInstrumentation;
   readonly #console: ConsoleInstrumentation;
@@ -27,6 +28,7 @@ export class DidbanClient extends DidbanCoreClient {
       getDeviceContext: browserDeviceContext,
       ...(errorStorage ? { errorStorage } : {}),
     });
+    this.#browserConfig = config;
     this.#dom = new DomInstrumentation(config, (breadcrumb) => {
       this.addClue(breadcrumb.message, breadcrumb.data, breadcrumb.category, breadcrumb.level);
     });
@@ -46,7 +48,7 @@ export class DidbanClient extends DidbanCoreClient {
     this.#dom.start();
     this.#network.start();
     if (typeof window !== 'undefined') {
-      if (this.config.captureConsoleErrors) this.#console.start();
+      if (this.#browserConfig.captureConsoleErrors) this.#console.start();
       window.addEventListener('error', this.#onWindowError);
       window.addEventListener('unhandledrejection', this.#onUnhandledRejection);
     }
