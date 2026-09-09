@@ -182,4 +182,47 @@ describe('Didban React Native SDK', () => {
     });
     expect(report.context.extra.http.durationMs).toBeGreaterThan(1);
   });
+
+  it('does not report an Axios rejection after its failed request was already reported', async () => {
+    let rejectionHandler: ((event: { reason?: unknown }) => void) | undefined;
+    vi.stubGlobal('addEventListener', (type: string, handler: typeof rejectionHandler) => {
+      if (type === 'unhandledrejection') rejectionHandler = handler;
+    });
+    vi.stubGlobal('removeEventListener', vi.fn());
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      return new Response(null, { status: 403 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test-key',
+      appName: 'mobile-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        captureAppErrors: false,
+      },
+    });
+
+    await fetch('https://service.example/files/move', { method: 'PUT' });
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    const axiosError = Object.assign(new Error('Request failed with status code 403'), {
+      name: 'AxiosError',
+      status: 403,
+      config: {
+        method: 'put',
+        baseURL: 'https://service.example',
+        url: '/files/move',
+      },
+      response: { status: 403 },
+    });
+    rejectionHandler?.({ reason: axiosError });
+    await Promise.resolve();
+
+    expect(send).toHaveBeenCalledTimes(2);
+    const reports = send.mock.calls.filter(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    expect(reports).toHaveLength(1);
+  });
 });

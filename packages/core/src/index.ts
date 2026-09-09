@@ -6,6 +6,7 @@ export { DEFAULT_CORE_CONFIG, MAX_BREADCRUMBS_LIMIT, resolveCoreConfig } from '.
 export type { ResolvedCoreConfig } from './config';
 export { DidbanCoreClient } from './client';
 export type { DidbanCoreClientOptions } from './client';
+export { RecentHttpErrorTracker } from './http-error-deduplication';
 export type {
   Breadcrumb,
   BreadcrumbCategory,

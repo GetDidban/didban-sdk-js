@@ -1,4 +1,9 @@
-import { DidbanCoreClient, type DeviceContext, type PageContext } from '@didban/core';
+import {
+  DidbanCoreClient,
+  RecentHttpErrorTracker,
+  type DeviceContext,
+  type PageContext,
+} from '@didban/core';
 import { ConsoleInstrumentation } from './console-instrumentation';
 import { resolveBrowserConfig, type ResolvedBrowserConfig } from './config';
 import { DomInstrumentation } from './dom-instrumentation';
@@ -6,7 +11,7 @@ import { NetworkInstrumentation } from './network-instrumentation';
 import type { DidbanInitOptions } from './types';
 
 const SDK_NAME = '@didban/browser-sdk';
-const SDK_VERSION = '0.1.1';
+const SDK_VERSION = '0.1.3';
 
 export class DidbanClient extends DidbanCoreClient {
   readonly #browserConfig: ResolvedBrowserConfig;
@@ -14,6 +19,7 @@ export class DidbanClient extends DidbanCoreClient {
   readonly #network: NetworkInstrumentation;
   readonly #console: ConsoleInstrumentation;
   readonly #capturedErrors = new WeakSet<object>();
+  readonly #recentHttpErrors = new RecentHttpErrorTracker();
   #started = false;
 
   constructor(options: DidbanInitOptions) {
@@ -35,7 +41,7 @@ export class DidbanClient extends DidbanCoreClient {
     this.#network = new NetworkInstrumentation(config, this.reportUrl, {
       addHttp: (data, level = 'info') => this.addClue('HTTP request', data, 'http', level),
       reportHttpError: (error, data) => {
-        void this.capture(error, { extra: { http: data } });
+        this.#reportHttpError(error, data);
       },
       reportSlowRequest: (error, data) => {
         void this.capture(error, {
@@ -69,6 +75,7 @@ export class DidbanClient extends DidbanCoreClient {
     if (!this.#started) return;
     this.#dom.stop();
     this.#network.stop();
+    this.#recentHttpErrors.clear();
     if (typeof window !== 'undefined') {
       this.#console.stop();
       window.removeEventListener('error', this.#onWindowError);
@@ -94,11 +101,18 @@ export class DidbanClient extends DidbanCoreClient {
     source: string,
     extra: Record<string, unknown> = {},
   ): Promise<boolean> | undefined {
+    if (this.#recentHttpErrors.matches(input)) return;
     if (typeof input === 'object' && input !== null) {
       if (this.#capturedErrors.has(input)) return;
       this.#capturedErrors.add(input);
     }
     return this.capture(input, { extra: { source, ...extra } });
+  }
+
+  #reportHttpError(error: Error, data: Record<string, unknown>): void {
+    this.#recentHttpErrors.remember(data);
+    this.#capturedErrors.add(error);
+    void this.capture(error, { extra: { http: data } });
   }
 }
 

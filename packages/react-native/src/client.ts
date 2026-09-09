@@ -1,4 +1,4 @@
-import { DidbanCoreClient, type DeviceContext } from '@didban/core';
+import { DidbanCoreClient, RecentHttpErrorTracker, type DeviceContext } from '@didban/core';
 import { Dimensions, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resolveReactNativeConfig } from './config';
@@ -8,7 +8,7 @@ import { ScreenProfiler } from './screen-profiler';
 import type { DidbanInitOptions, ScreenPerformanceMetrics } from './types';
 
 const SDK_NAME = '@didban/react-native';
-const SDK_VERSION = '0.1.1';
+const SDK_VERSION = '0.1.3';
 
 interface RouteState {
   current?: string;
@@ -19,6 +19,8 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
   readonly #network: ReactNativeNetworkInstrumentation;
   readonly #screenProfiler: ScreenProfiler;
   readonly #routeState: RouteState;
+  readonly #capturedErrors = new WeakSet<object>();
+  readonly #recentHttpErrors = new RecentHttpErrorTracker();
   #started = false;
 
   constructor(options: DidbanInitOptions) {
@@ -40,7 +42,7 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
     this.#network = new ReactNativeNetworkInstrumentation(config, this.reportUrl, {
       addHttp: (data, level = 'info') => this.addClue('HTTP request', data, 'http', level),
       reportHttpError: (error, data) => {
-        void this.capture(error, { extra: { http: data } });
+        this.#reportHttpError(error, data);
       },
       reportSlowRequest: (error, data) => {
         void this.capture(error, {
@@ -56,7 +58,7 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
       config.captureAppErrors,
       config.captureUnhandledRejections,
       (error, data) => {
-        void this.capture(error, { extra: data });
+        this.#captureAutomatic(error, data);
       },
     );
     this.#screenProfiler = new ScreenProfiler(config, (metrics) => {
@@ -87,6 +89,7 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
     if (!this.#started) return;
     this.#errors.stop();
     this.#network.stop();
+    this.#recentHttpErrors.clear();
     this.#screenProfiler.stop();
     this.#started = false;
   }
@@ -108,6 +111,21 @@ export class DidbanReactNativeClient extends DidbanCoreClient {
 
   getScreenPerformance(): ScreenPerformanceMetrics | undefined {
     return this.#screenProfiler.snapshot();
+  }
+
+  #captureAutomatic(error: unknown, data: Record<string, unknown>): void {
+    if (this.#recentHttpErrors.matches(error)) return;
+    if (typeof error === 'object' && error !== null) {
+      if (this.#capturedErrors.has(error)) return;
+      this.#capturedErrors.add(error);
+    }
+    void this.capture(error, { extra: data });
+  }
+
+  #reportHttpError(error: Error, data: Record<string, unknown>): void {
+    this.#recentHttpErrors.remember(data);
+    this.#capturedErrors.add(error);
+    void this.capture(error, { extra: { http: data } });
   }
 }
 

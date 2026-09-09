@@ -189,4 +189,44 @@ describe('Didban browser SDK', () => {
       level: 'warning',
     });
   });
+
+  it('does not report an Axios rejection after its failed request was already reported', async () => {
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      return new Response(null, { status: 403 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test',
+      appName: 'browser-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        captureConsoleErrors: false,
+      },
+    });
+
+    await fetch('https://service.example/files/move', { method: 'PUT' });
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    const axiosError = Object.assign(new Error('Request failed with status code 403'), {
+      name: 'AxiosError',
+      status: 403,
+      config: {
+        method: 'put',
+        baseURL: 'https://service.example',
+        url: '/files/move',
+      },
+      response: { status: 403 },
+    });
+    const rejection = new Event('unhandledrejection') as PromiseRejectionEvent;
+    Object.defineProperty(rejection, 'reason', { value: axiosError });
+    window.dispatchEvent(rejection);
+    await Promise.resolve();
+
+    expect(send).toHaveBeenCalledTimes(2);
+    const reports = send.mock.calls.filter(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    expect(reports).toHaveLength(1);
+  });
 });
