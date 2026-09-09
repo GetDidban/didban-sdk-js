@@ -27,3 +27,7 @@ await Didban.capture(new Error('Payment failed'));
 به‌صورت خودکار کلیک و ورودی‌های DOM، خطاهای `window.error` و `unhandledrejection` و درخواست‌های
 `fetch` و XHR ثبت می‌شوند. داده‌های دارای کلیدهایی مثل `password`، `token` و `apiKey` پیش از
 ارسال فیلتر می‌شوند.
+
+خطاهای دارای شیء `Error` که در `console.error` ثبت می‌شوند نیز به‌صورت پیش‌فرض ارسال
+می‌شوند. این مسیر خطاهای render گرفته‌شده توسط React Error Boundary را پوشش می‌دهد و با
+`captureConsoleErrors: false` قابل غیرفعال‌کردن است.

@@ -1,4 +1,5 @@
 import { DidbanCoreClient, type DeviceContext, type PageContext } from '@didban/core';
+import { ConsoleInstrumentation } from './console-instrumentation';
 import { resolveBrowserConfig, type ResolvedBrowserConfig } from './config';
 import { DomInstrumentation } from './dom-instrumentation';
 import { NetworkInstrumentation } from './network-instrumentation';
@@ -10,6 +11,8 @@ const SDK_VERSION = '0.1.1';
 export class DidbanClient extends DidbanCoreClient {
   readonly #dom: DomInstrumentation;
   readonly #network: NetworkInstrumentation;
+  readonly #console: ConsoleInstrumentation;
+  readonly #capturedErrors = new WeakSet<object>();
   #started = false;
 
   constructor(options: DidbanInitOptions) {
@@ -33,6 +36,9 @@ export class DidbanClient extends DidbanCoreClient {
         void this.capture(error, { extra: { http: data } });
       },
     });
+    this.#console = new ConsoleInstrumentation((error) => {
+      return this.#captureAutomatic(error, 'console.error');
+    });
   }
 
   start(): this {
@@ -40,6 +46,7 @@ export class DidbanClient extends DidbanCoreClient {
     this.#dom.start();
     this.#network.start();
     if (typeof window !== 'undefined') {
+      if (this.config.captureConsoleErrors) this.#console.start();
       window.addEventListener('error', this.#onWindowError);
       window.addEventListener('unhandledrejection', this.#onUnhandledRejection);
     }
@@ -52,6 +59,7 @@ export class DidbanClient extends DidbanCoreClient {
     this.#dom.stop();
     this.#network.stop();
     if (typeof window !== 'undefined') {
+      this.#console.stop();
       window.removeEventListener('error', this.#onWindowError);
       window.removeEventListener('unhandledrejection', this.#onUnhandledRejection);
     }
@@ -59,14 +67,28 @@ export class DidbanClient extends DidbanCoreClient {
   }
 
   readonly #onWindowError = (event: ErrorEvent): void => {
-    void this.capture(event.error ?? new Error(event.message), {
-      extra: { filename: event.filename, line: event.lineno, column: event.colno },
+    this.#captureAutomatic(event.error ?? new Error(event.message), 'window.error', {
+      filename: event.filename,
+      line: event.lineno,
+      column: event.colno,
     });
   };
 
   readonly #onUnhandledRejection = (event: PromiseRejectionEvent): void => {
-    void this.capture(event.reason, { extra: { source: 'unhandledrejection' } });
+    this.#captureAutomatic(event.reason, 'unhandledrejection');
   };
+
+  #captureAutomatic(
+    input: unknown,
+    source: string,
+    extra: Record<string, unknown> = {},
+  ): Promise<boolean> | undefined {
+    if (typeof input === 'object' && input !== null) {
+      if (this.#capturedErrors.has(input)) return;
+      this.#capturedErrors.add(input);
+    }
+    return this.capture(input, { extra: { source, ...extra } });
+  }
 }
 
 function browserErrorStorage(): Storage | undefined {

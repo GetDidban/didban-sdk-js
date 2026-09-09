@@ -2,6 +2,7 @@ import { resolveCoreConfig, type ResolvedCoreConfig } from '@didban/core';
 import type { DidbanConfig } from './types';
 
 export const DEFAULT_BROWSER_CONFIG = {
+  captureConsoleErrors: true,
   captureClicks: true,
   captureInputs: true,
   captureNetwork: true,
@@ -21,6 +22,7 @@ export const DEFAULT_BROWSER_CONFIG = {
 } as const;
 
 export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
+  captureConsoleErrors: boolean;
   captureClicks: boolean;
   captureInputs: boolean;
   captureNetwork: boolean;
@@ -35,6 +37,8 @@ export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
 export function resolveBrowserConfig(config: DidbanConfig = {}): ResolvedBrowserConfig {
   return {
     ...resolveCoreConfig(config),
+    captureConsoleErrors:
+      config.captureConsoleErrors ?? DEFAULT_BROWSER_CONFIG.captureConsoleErrors,
     captureClicks: config.captureClicks ?? DEFAULT_BROWSER_CONFIG.captureClicks,
     captureInputs: config.captureInputs ?? DEFAULT_BROWSER_CONFIG.captureInputs,
     captureNetwork: config.captureNetwork ?? DEFAULT_BROWSER_CONFIG.captureNetwork,

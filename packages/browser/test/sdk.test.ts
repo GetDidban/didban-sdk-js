@@ -97,4 +97,31 @@ describe('Didban browser SDK', () => {
     expect(report.error.stack).toContain('submitOrder');
     expect(report.error.stack).toContain('returned HTTP 403');
   });
+
+  it('captures Error objects logged by React error boundaries without double reporting', async () => {
+    const send = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async () => new Response(null, { status: 202 }),
+    );
+    vi.stubGlobal('fetch', send);
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const spiedConsoleError = console.error;
+    Didban.init({
+      apiKey: 'test',
+      appName: 'react-web',
+      config: { baseUrl: 'https://collector.example', captureNetwork: false },
+    });
+
+    const error = new TypeError("Cannot read properties of undefined (reading 'id')");
+    console.error('The above error occurred in a component:', error);
+    window.dispatchEvent(new ErrorEvent('error', { error, message: error.message }));
+
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+    const report = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
+    expect(report.error).toMatchObject({ name: 'TypeError', message: error.message });
+    expect(report.context.extra.source).toBe('console.error');
+    expect(consoleSpy).toHaveBeenCalledWith('The above error occurred in a component:', error);
+
+    Didban.destroy();
+    expect(console.error).toBe(spiedConsoleError);
+  });
 });
