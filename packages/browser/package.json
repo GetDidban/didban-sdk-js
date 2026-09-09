@@ -1,6 +1,6 @@
 {
   "name": "@didban/browser-sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Didban browser monitoring SDK for errors, user interactions, and network breadcrumbs.",
   "type": "module",
   "main": "./dist/index.cjs",
