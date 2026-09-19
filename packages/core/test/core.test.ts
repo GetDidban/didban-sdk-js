@@ -1,13 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BreadcrumbBuffer,
+  DidbanApiClient,
+  DidbanCoreClient,
   ERROR_RETENTION_MS,
   ErrorReportStore,
   MAX_STORED_ERRORS,
+  resolveCoreConfig,
   sanitize,
   type DidbanReport,
   type KeyValueStorage,
 } from '../src';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('Didban core', () => {
   it('keeps only the latest 30 breadcrumbs', () => {
@@ -59,6 +66,34 @@ describe('Didban core', () => {
     expect(reports.some((item) => item.error.message === 'expired')).toBe(false);
     expect(reports[0]?.error.message).toBe('recent-5');
     expect(reports.at(-1)?.error.message).toBe('recent-24');
+  });
+
+  it('turns collector HTTP and network failures into a false result', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
+    const api = new DidbanApiClient({ apiKey: 'test', baseUrl: 'https://collector.example' });
+
+    await expect(api.sendReport(report('bad-request', Date.now()))).resolves.toBe(false);
+
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('offline'));
+    await expect(api.sendReport(report('offline', Date.now()))).resolves.toBe(false);
+  });
+
+  it('never rejects capture even when user hooks throw', async () => {
+    const client = new DidbanCoreClient({
+      apiKey: 'test',
+      appName: 'test-app',
+      config: resolveCoreConfig({
+        beforeSend: () => {
+          throw new Error('hook failed');
+        },
+        onError: () => {
+          throw new Error('error callback failed');
+        },
+      }),
+      sdk: { name: 'test', version: '1' },
+    });
+
+    await expect(client.capture(new Error('application failed'))).resolves.toBe(false);
   });
 });
 

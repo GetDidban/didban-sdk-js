@@ -46,3 +46,17 @@ Didban.init({
 ```
 
 برای غیرفعال‌کردن این گزارش‌ها `reportSlowRequests: false` را تنظیم کنید.
+
+به‌صورت پیش‌فرض، شناسه‌های پویا در مسیر URL (مانند عدد یا UUID) هنگام گروه‌بندی نادیده گرفته
+می‌شوند. برای endpointهایی که هر شناسه باید issue جدا بسازد، آدرس یا الگوی آن‌ها را در
+`separateHttpUrls` قرار دهید. مقدارهای query در هر دو حالت وارد fingerprint نمی‌شوند.
+
+```ts
+Didban.init({
+  apiKey: 'YOUR_API_KEY',
+  appName: 'storefront-web',
+  config: {
+    separateHttpUrls: ['/api/v1/maintenance/service/timeline/', /\/api\/v1\/orders\/\d+$/],
+  },
+});
+```

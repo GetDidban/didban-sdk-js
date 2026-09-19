@@ -64,6 +64,7 @@ export class ReactNativeNetworkInstrumentation {
           ok: response.ok,
           durationMs: Math.round(now() - startedAt),
           requestBody,
+          ...self.#fingerprintMode(url),
         };
         if (self.#config.captureResponseBody) {
           data.responseBody = await self.#readResponse(response);
@@ -96,6 +97,7 @@ export class ReactNativeNetworkInstrumentation {
           durationMs: Math.round(now() - startedAt),
           requestBody,
           error: error.message,
+          ...self.#fingerprintMode(url),
         };
         self.#hooks.addHttp(data, 'error');
         if (self.#config.reportFailedRequests) self.#hooks.reportHttpError(error, data);
@@ -121,6 +123,12 @@ export class ReactNativeNetworkInstrumentation {
     } catch {
       return '[Unavailable]';
     }
+  }
+
+  #fingerprintMode(url: string): Record<string, string> {
+    return shouldIgnoreUrl(url, this.#config.separateHttpUrls)
+      ? { fingerprintMode: 'exact-path' }
+      : {};
   }
 }
 

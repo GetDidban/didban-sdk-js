@@ -21,6 +21,7 @@ export const DEFAULT_BROWSER_CONFIG = {
     '[autocomplete=cc-csc]',
   ],
   ignoreUrls: [],
+  separateHttpUrls: [],
 } as const;
 
 export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
@@ -36,6 +37,7 @@ export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
   maskAllInputs: boolean;
   maskSelectors: string[];
   ignoreUrls: Array<string | RegExp>;
+  separateHttpUrls: Array<string | RegExp>;
 }
 
 export function resolveBrowserConfig(config: DidbanConfig = {}): ResolvedBrowserConfig {
@@ -58,5 +60,6 @@ export function resolveBrowserConfig(config: DidbanConfig = {}): ResolvedBrowser
     maskAllInputs: config.maskAllInputs ?? DEFAULT_BROWSER_CONFIG.maskAllInputs,
     maskSelectors: [...(config.maskSelectors ?? DEFAULT_BROWSER_CONFIG.maskSelectors)],
     ignoreUrls: [...(config.ignoreUrls ?? DEFAULT_BROWSER_CONFIG.ignoreUrls)],
+    separateHttpUrls: [...(config.separateHttpUrls ?? DEFAULT_BROWSER_CONFIG.separateHttpUrls)],
   };
 }

@@ -24,13 +24,17 @@ export class DidbanApiClient {
     return this.#reportUrl;
   }
 
-  async sendReport(report: DidbanReport): Promise<void> {
-    if (!this.#fetch) throw new Error('Didban requires fetch() to send reports');
-    const response = await this.#fetch(this.#reportUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': this.#apiKey },
-      body: JSON.stringify(report),
-    });
-    if (!response.ok) throw new Error(`Didban server returned HTTP ${response.status}`);
+  async sendReport(report: DidbanReport): Promise<boolean> {
+    if (!this.#fetch) return false;
+    try {
+      const response = await this.#fetch(this.#reportUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': this.#apiKey },
+        body: JSON.stringify(report),
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }
 }

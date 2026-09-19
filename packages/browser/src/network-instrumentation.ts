@@ -93,6 +93,7 @@ export class NetworkInstrumentation {
           ok: response.ok,
           durationMs: Math.round(now() - startedAt),
           requestBody,
+          ...self.#fingerprintMode(url),
         };
         if (self.#config.captureResponseBody) {
           data.responseBody = await self.#readFetchBody(response);
@@ -123,6 +124,7 @@ export class NetworkInstrumentation {
           durationMs: Math.round(now() - startedAt),
           requestBody,
           error: error.message,
+          ...self.#fingerprintMode(url),
         };
         self.#hooks.addHttp(data, 'error');
         if (self.#config.reportFailedRequests) self.#hooks.reportHttpError(error, data);
@@ -191,6 +193,7 @@ export class NetworkInstrumentation {
       ok,
       durationMs: Math.round(now() - meta.startedAt),
       requestBody: meta.requestBody,
+      ...this.#fingerprintMode(meta.url),
     };
     if (this.#config.captureResponseBody) {
       try {
@@ -222,6 +225,12 @@ export class NetworkInstrumentation {
 
   #isSlow(duration: unknown): boolean {
     return typeof duration === 'number' && duration > this.#config.slowRequestThresholdMs;
+  }
+
+  #fingerprintMode(url: string): Record<string, string> {
+    return shouldIgnoreUrl(url, this.#config.separateHttpUrls)
+      ? { fingerprintMode: 'exact-path' }
+      : {};
   }
 }
 

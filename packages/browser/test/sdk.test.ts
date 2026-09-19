@@ -163,6 +163,37 @@ describe('Didban browser SDK', () => {
       },
     });
     expect(report.context.extra.http.durationMs).toBeGreaterThan(1);
+    expect(report.context.extra.http.fingerprintMode).toBeUndefined();
+  });
+
+  it('marks configured HTTP URLs for exact-path fingerprinting', async () => {
+    const send = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('collector.example')) return new Response(null, { status: 202 });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return new Response(null, { status: 200 });
+    });
+    vi.stubGlobal('fetch', send);
+    Didban.init({
+      apiKey: 'test',
+      appName: 'browser-app',
+      config: {
+        baseUrl: 'https://collector.example',
+        slowRequestThresholdMs: 1,
+        separateHttpUrls: ['/maintenance/service/timeline/'],
+      },
+    });
+
+    await fetch('https://service.example/api/v1/maintenance/service/timeline/103897');
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+
+    const reportCall = send.mock.calls.find(([input]) =>
+      String(input).includes('collector.example'),
+    );
+    const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.context.extra.http).toMatchObject({
+      url: 'https://service.example/api/v1/maintenance/service/timeline/103897',
+      fingerprintMode: 'exact-path',
+    });
   });
 
   it('can disable slow browser request reports', async () => {

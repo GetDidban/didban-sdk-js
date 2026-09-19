@@ -16,6 +16,11 @@ export interface DidbanConfig extends DidbanCoreConfig {
   maskAllInputs?: boolean;
   maskSelectors?: string[];
   ignoreUrls?: Array<string | RegExp>;
+  /**
+   * URLs whose dynamic path values must produce separate issues.
+   * String entries match any URL containing that value; RegExp entries use test().
+   */
+  separateHttpUrls?: Array<string | RegExp>;
 }
 
 export type DidbanInitOptions = DidbanCoreInitOptions<DidbanConfig>;

@@ -49,6 +49,7 @@ const metrics = Didban.getScreenPerformance();
 | `reportSlowRequests`           | `true`  | ارسال warning برای درخواست‌های HTTP کند                       |
 | `slowRequestThresholdMs`       | `3000`  | بیشترین زمان قابل قبول هر درخواست برحسب میلی‌ثانیه            |
 | `ignoreUrls`                   | `[]`    | URLها یا RegExpهای مستثنا                                     |
+| `separateHttpUrls`             | `[]`    | URLهایی که شناسهٔ مسیرشان باید issue جدا بسازد                |
 | `getDeviceContext`             | —       | افزودن اطلاعات سفارشی دستگاه به payload                       |
 | `enableScreenProfiling`        | `true`  | فعال‌سازی پروفایلینگ صفحه پس از `setCurrentRoute`             |
 | `reportFpsDrops`               | `true`  | ارسال warning هنگام افت عملکرد                                |

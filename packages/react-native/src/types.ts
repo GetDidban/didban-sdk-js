@@ -12,6 +12,11 @@ export interface DidbanReactNativeConfig extends DidbanCoreConfig {
   /** Maximum acceptable request duration in milliseconds. */
   slowRequestThresholdMs?: number;
   ignoreUrls?: Array<string | RegExp>;
+  /**
+   * URLs whose dynamic path values must produce separate issues.
+   * String entries match any URL containing that value; RegExp entries use test().
+   */
+  separateHttpUrls?: Array<string | RegExp>;
   getDeviceContext?: () => DeviceContext;
   enableScreenProfiling?: boolean;
   reportFpsDrops?: boolean;

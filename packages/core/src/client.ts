@@ -57,7 +57,7 @@ export class DidbanCoreClient {
       ? new ErrorReportStore(options.errorStorage, this.#appName)
       : undefined;
     void this.#errorStore?.list().catch((cause: unknown) => {
-      this.config.onError?.(normalizeError(cause));
+      this.#notifyError(cause);
     });
   }
 
@@ -107,10 +107,10 @@ export class DidbanCoreClient {
   }
 
   async capture(input: unknown, context?: CaptureContext): Promise<boolean> {
-    const error = normalizeError(input);
-    this.addClue(error.message, { name: error.name }, 'error', context?.level ?? 'error');
-    let report = this.#createReport(error, context);
     try {
+      const error = normalizeError(input);
+      this.addClue(error.message, { name: error.name }, 'error', context?.level ?? 'error');
+      let report = this.#createReport(error, context);
       if (this.config.beforeSend) {
         const processed = await this.config.beforeSend(report);
         if (!processed) return false;
@@ -120,14 +120,21 @@ export class DidbanCoreClient {
         try {
           await this.#errorStore.add(report);
         } catch (cause) {
-          this.config.onError?.(normalizeError(cause));
+          this.#notifyError(cause);
         }
       }
-      await this.#api.sendReport(report);
-      return true;
+      return await this.#api.sendReport(report);
     } catch (cause) {
-      this.config.onError?.(normalizeError(cause));
+      this.#notifyError(cause);
       return false;
+    }
+  }
+
+  #notifyError(cause: unknown): void {
+    try {
+      this.config.onError?.(normalizeError(cause));
+    } catch {
+      // Monitoring callbacks must never affect the host application.
     }
   }
 
