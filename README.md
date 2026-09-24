@@ -1,6 +1,6 @@
 # Didban JavaScript SDKs
 
-مخزن چندپکیجی SDK دیدبان برای مرورگر و React Native است. منطق مشترک ارسال گزارش، پاک‌سازی
+مخزن چندپکیجی SDK دیدبان برای مرورگر، React Native، Node.js و NestJS است. منطق مشترک ارسال گزارش، پاک‌سازی
 داده‌ها و breadcrumbها در `@didban/core` قرار دارد و هر محیط instrumentation مخصوص خودش را
 دارد.
 
@@ -10,6 +10,8 @@
 | ---------------------- | ------------------------------------------------------------ |
 | `@didban/browser-sdk`  | وب، DOM، خطاهای `window` و رهگیری `fetch`/XHR                |
 | `@didban/react-native` | React Native و Expo، خطاهای JavaScript، navigation و `fetch` |
+| `@didban/node-sdk`     | Node.js، خطاهای process، trace، کندی و `fetch`               |
+| `@didban/nestjs`       | NestJS، Middleware، Interceptor و Exception Filter           |
 | `@didban/core`         | هسته‌ی مشترک؛ معمولاً مستقیم نصب نمی‌شود                     |
 
 ## توسعه
