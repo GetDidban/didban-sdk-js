@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@didban/core': fileURLToPath(new URL('./packages/core/src/index.ts', import.meta.url)),
+      '@didban/node-sdk': fileURLToPath(new URL('./packages/node/src/index.ts', import.meta.url)),
       'react-native': fileURLToPath(
         new URL('./packages/react-native/test/react-native.mock.ts', import.meta.url),
       ),
