@@ -1,0 +1,44 @@
+{
+  "name": "@didban/node-sdk",
+  "version": "0.1.0",
+  "description": "Didban Node.js SDK for automatic error capture, tracing, and performance monitoring.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  },
+  "keywords": [
+    "didban",
+    "nodejs",
+    "monitoring",
+    "tracing",
+    "apm",
+    "error-tracking"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@didban/core": "^0.1.0"
+  }
+}
