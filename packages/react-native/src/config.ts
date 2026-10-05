@@ -6,7 +6,6 @@ export const DEFAULT_REACT_NATIVE_CONFIG = {
   captureUnhandledRejections: true,
   captureNetwork: true,
   captureRequestBody: true,
-  captureResponseBody: true,
   reportFailedRequests: true,
   reportSlowRequests: true,
   slowRequestThresholdMs: 3_000,
@@ -26,7 +25,6 @@ export interface ResolvedReactNativeConfig extends ResolvedCoreConfig {
   captureUnhandledRejections: boolean;
   captureNetwork: boolean;
   captureRequestBody: boolean;
-  captureResponseBody: boolean;
   reportFailedRequests: boolean;
   reportSlowRequests: boolean;
   slowRequestThresholdMs: number;
@@ -52,8 +50,6 @@ export function resolveReactNativeConfig(
       config.captureUnhandledRejections ?? DEFAULT_REACT_NATIVE_CONFIG.captureUnhandledRejections,
     captureNetwork: config.captureNetwork ?? DEFAULT_REACT_NATIVE_CONFIG.captureNetwork,
     captureRequestBody: config.captureRequestBody ?? DEFAULT_REACT_NATIVE_CONFIG.captureRequestBody,
-    captureResponseBody:
-      config.captureResponseBody ?? DEFAULT_REACT_NATIVE_CONFIG.captureResponseBody,
     reportFailedRequests:
       config.reportFailedRequests ?? DEFAULT_REACT_NATIVE_CONFIG.reportFailedRequests,
     reportSlowRequests: config.reportSlowRequests ?? DEFAULT_REACT_NATIVE_CONFIG.reportSlowRequests,

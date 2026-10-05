@@ -5,6 +5,7 @@ export interface DidbanReactNativeConfig extends DidbanCoreConfig {
   captureUnhandledRejections?: boolean;
   captureNetwork?: boolean;
   captureRequestBody?: boolean;
+  /** @deprecated Response bodies are never captured or sent. */
   captureResponseBody?: boolean;
   reportFailedRequests?: boolean;
   /** Send a warning report when an HTTP request exceeds slowRequestThresholdMs. */

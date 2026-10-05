@@ -1,11 +1,4 @@
-import {
-  now,
-  sanitize,
-  sanitizeBody,
-  shouldIgnoreUrl,
-  truncate,
-  type LogLevel,
-} from '@didban/core';
+import { now, sanitizeBody, shouldIgnoreUrl, truncate, type LogLevel } from '@didban/core';
 import type { ResolvedBrowserConfig } from './config';
 
 interface InstrumentationHooks {
@@ -95,9 +88,6 @@ export class NetworkInstrumentation {
           requestBody,
           ...self.#fingerprintMode(url),
         };
-        if (self.#config.captureResponseBody) {
-          data.responseBody = await self.#readFetchBody(response);
-        }
         const isSlow = self.#isSlow(data.durationMs);
         self.#hooks.addHttp(data, response.ok ? (isSlow ? 'warning' : 'info') : 'error');
         if (!response.ok && self.#config.reportFailedRequests) {
@@ -131,20 +121,6 @@ export class NetworkInstrumentation {
         throw cause;
       }
     };
-  }
-
-  async #readFetchBody(response: Response): Promise<unknown> {
-    try {
-      const text = await response.clone().text();
-      if (!text) return undefined;
-      try {
-        return sanitize(JSON.parse(text), this.#config.maxValueLength);
-      } catch {
-        return truncate(text, this.#config.maxValueLength);
-      }
-    } catch {
-      return '[Unavailable]';
-    }
   }
 
   #patchXhr(): void {
@@ -195,16 +171,6 @@ export class NetworkInstrumentation {
       requestBody: meta.requestBody,
       ...this.#fingerprintMode(meta.url),
     };
-    if (this.#config.captureResponseBody) {
-      try {
-        data.responseBody = sanitize(
-          xhr.responseType === 'json' ? xhr.response : xhr.responseText,
-          this.#config.maxValueLength,
-        );
-      } catch {
-        data.responseBody = '[Unavailable]';
-      }
-    }
     const isSlow = this.#isSlow(data.durationMs);
     this.#hooks.addHttp(data, ok ? (isSlow ? 'warning' : 'info') : 'error');
     if (!ok && this.#config.reportFailedRequests) {

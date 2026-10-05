@@ -82,6 +82,7 @@ describe('Didban React Native SDK', () => {
         baseUrl: 'https://collector.example',
         captureAppErrors: false,
         captureUnhandledRejections: false,
+        captureResponseBody: true,
       },
     });
 
@@ -93,10 +94,13 @@ describe('Didban React Native SDK', () => {
     await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(2));
 
     expect(response.status).toBe(403);
+    const http = Didban.getBreadcrumbs().find((item) => item.category === 'http');
+    expect(http?.data).not.toHaveProperty('responseBody');
     const reportCall = send.mock.calls.find(([input]) =>
       String(input).includes('collector.example'),
     );
     const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.context.extra.http).not.toHaveProperty('responseBody');
     expect(report.error.stack).toContain('loadOrders');
     expect(report.error.stack).toContain('returned HTTP 403');
   });

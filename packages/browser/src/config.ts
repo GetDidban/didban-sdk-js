@@ -7,7 +7,6 @@ export const DEFAULT_BROWSER_CONFIG = {
   captureInputs: true,
   captureNetwork: true,
   captureRequestBody: true,
-  captureResponseBody: true,
   reportFailedRequests: true,
   reportSlowRequests: true,
   slowRequestThresholdMs: 3_000,
@@ -30,7 +29,6 @@ export interface ResolvedBrowserConfig extends ResolvedCoreConfig {
   captureInputs: boolean;
   captureNetwork: boolean;
   captureRequestBody: boolean;
-  captureResponseBody: boolean;
   reportFailedRequests: boolean;
   reportSlowRequests: boolean;
   slowRequestThresholdMs: number;
@@ -49,7 +47,6 @@ export function resolveBrowserConfig(config: DidbanConfig = {}): ResolvedBrowser
     captureInputs: config.captureInputs ?? DEFAULT_BROWSER_CONFIG.captureInputs,
     captureNetwork: config.captureNetwork ?? DEFAULT_BROWSER_CONFIG.captureNetwork,
     captureRequestBody: config.captureRequestBody ?? DEFAULT_BROWSER_CONFIG.captureRequestBody,
-    captureResponseBody: config.captureResponseBody ?? DEFAULT_BROWSER_CONFIG.captureResponseBody,
     reportFailedRequests:
       config.reportFailedRequests ?? DEFAULT_BROWSER_CONFIG.reportFailedRequests,
     reportSlowRequests: config.reportSlowRequests ?? DEFAULT_BROWSER_CONFIG.reportSlowRequests,

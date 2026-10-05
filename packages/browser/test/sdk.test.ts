@@ -69,7 +69,7 @@ describe('Didban browser SDK', () => {
     Didban.init({
       apiKey: 'test',
       appName: 'checkout-web',
-      config: { baseUrl: 'https://collector.example' },
+      config: { baseUrl: 'https://collector.example', captureResponseBody: true },
     });
 
     async function submitOrder(): Promise<Response> {
@@ -87,13 +87,14 @@ describe('Didban browser SDK', () => {
     expect(http?.data).toMatchObject({
       status: 403,
       method: 'POST',
-      responseBody: { reason: 'denied' },
       requestBody: { product: 10, token: '[Filtered]' },
     });
+    expect(http?.data).not.toHaveProperty('responseBody');
     const reportCall = original.mock.calls.find(([input]) =>
       String(input).includes('collector.example'),
     );
     const report = JSON.parse(String(reportCall?.[1]?.body));
+    expect(report.context.extra.http).not.toHaveProperty('responseBody');
     expect(report.error.stack).toContain('submitOrder');
     expect(report.error.stack).toContain('returned HTTP 403');
   });

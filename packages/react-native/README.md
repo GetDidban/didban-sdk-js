@@ -44,7 +44,6 @@ const metrics = Didban.getScreenPerformance();
 | `captureUnhandledRejections`   | `true`  | ثبت rejection در runtimeهایی که event مربوطه را ارائه می‌کنند |
 | `captureNetwork`               | `true`  | رهگیری `fetch`                                                |
 | `captureRequestBody`           | `true`  | ثبت بدنه‌ی درخواست پس از پاک‌سازی                             |
-| `captureResponseBody`          | `true`  | ثبت بدنه‌ی پاسخ                                               |
 | `reportFailedRequests`         | `true`  | ساخت گزارش برای پاسخ‌های HTTP ناموفق                          |
 | `reportSlowRequests`           | `true`  | ارسال warning برای درخواست‌های HTTP کند                       |
 | `slowRequestThresholdMs`       | `3000`  | بیشترین زمان قابل قبول هر درخواست برحسب میلی‌ثانیه            |
@@ -58,6 +57,9 @@ const metrics = Didban.getScreenPerformance();
 | `slowFrameThresholdMs`         | `32`    | زمان فریمی که slow محسوب می‌شود                               |
 | `slowFramePercentageThreshold` | `20`    | حداکثر درصد slow frame قابل قبول                              |
 | `fpsReportCooldownMs`          | `30000` | فاصله‌ی حداقل بین دو گزارش یک route                           |
+
+بدنه‌ی پاسخ HTTP هیچ‌گاه در breadcrumb یا گزارش خطا ثبت و ارسال نمی‌شود. گزینه‌ی قدیمی
+`captureResponseBody` برای سازگاری با تنظیمات موجود پذیرفته می‌شود، اما دیگر اثری ندارد.
 
 اطلاعات سیستم‌عامل، نسخه و ابعاد پنجره از `Platform` و `Dimensions` گرفته می‌شوند. این نسخه
 خطاهای JavaScript را پوشش می‌دهد. معیار FPS فعلی مربوط به thread جاوااسکریپت است؛ اندازه‌گیری

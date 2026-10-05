@@ -1,11 +1,4 @@
-import {
-  now,
-  sanitize,
-  sanitizeBody,
-  shouldIgnoreUrl,
-  truncate,
-  type LogLevel,
-} from '@didban/core';
+import { now, sanitizeBody, shouldIgnoreUrl, truncate, type LogLevel } from '@didban/core';
 import type { ResolvedReactNativeConfig } from './config';
 
 interface InstrumentationHooks {
@@ -66,9 +59,6 @@ export class ReactNativeNetworkInstrumentation {
           requestBody,
           ...self.#fingerprintMode(url),
         };
-        if (self.#config.captureResponseBody) {
-          data.responseBody = await self.#readResponse(response);
-        }
         const isSlow =
           typeof data.durationMs === 'number' &&
           data.durationMs > self.#config.slowRequestThresholdMs;
@@ -109,20 +99,6 @@ export class ReactNativeNetworkInstrumentation {
   stop(): void {
     if (this.#originalFetch) globalThis.fetch = this.#originalFetch;
     this.#originalFetch = undefined;
-  }
-
-  async #readResponse(response: Response): Promise<unknown> {
-    try {
-      const text = await response.clone().text();
-      if (!text) return undefined;
-      try {
-        return sanitize(JSON.parse(text), this.#config.maxValueLength);
-      } catch {
-        return truncate(text, this.#config.maxValueLength);
-      }
-    } catch {
-      return '[Unavailable]';
-    }
   }
 
   #fingerprintMode(url: string): Record<string, string> {
